@@ -1,6 +1,8 @@
 use cli_todo_list_manager::{Todo, TodoList};
 use std::env;
 use std::env::Args;
+use std::io;
+use std::io::Write;
 
 #[derive(Debug)]
 enum TodoActions {
@@ -10,6 +12,7 @@ enum TodoActions {
     Delete,
     MarkAsCompleted,
     Exit,
+    Export,
 }
 
 #[derive(Debug)]
@@ -30,6 +33,7 @@ fn build_config(args: Args) -> ArgumentConfig {
             "delete" => action = TodoActions::Delete,
             "mark_completed" => action = TodoActions::MarkAsCompleted,
             "exit" => action = TodoActions::Exit,
+            "export" => action = TodoActions::Export,
             _ => additional_args.push_str(&arg),
         }
     }
@@ -40,6 +44,22 @@ fn build_config(args: Args) -> ArgumentConfig {
     }
 }
 
+fn export_todo_list_to_file(todo_list: &TodoList) -> io::Result<()> {
+    let file_path = "todo_list.txt";
+    let mut file = std::fs::File::create(file_path)?;
+
+    for (todo, id) in &todo_list.data {
+        writeln!(
+            file,
+            "ID: {}, Name: {}, Title: {}, Description: {}, Completed: {}",
+            id, todo.name, todo.title, todo.description, todo.is_completed
+        )?;
+    }
+
+    println!("Todo list exported to {}", file_path);
+    Ok(())
+}
+
 fn match_input_to_action(input: &str) -> TodoActions {
     match input {
         "1" => TodoActions::Initialize,
@@ -47,7 +67,9 @@ fn match_input_to_action(input: &str) -> TodoActions {
         "3" => TodoActions::Update,
         "4" => TodoActions::Delete,
         "5" => TodoActions::MarkAsCompleted,
-        "exit" => TodoActions::Exit,
+        "6" => TodoActions::Exit,
+        "7" => TodoActions::Export,
+
         _ => TodoActions::Initialize, // Default action
     }
 }
@@ -98,7 +120,11 @@ fn use_cli() {
                 println!("{:?}", todo_list);
             }
             TodoActions::Update => {
-                let id = 1; // Assuming we know the ID of the task to update
+                println!("Updating an existing task...");
+                println!("Enter todo id");
+                let id = get_user_input()
+                    .parse::<u32>()
+                    .expect("Please enter a valid ID");
                 println!("Updating task with ID: {}", id);
                 println!("Please enter new description:");
                 let updated_desc = get_user_input();
@@ -127,6 +153,11 @@ fn use_cli() {
             TodoActions::Exit => {
                 println!("Exiting the application.");
                 break;
+            }
+            TodoActions::Export => {
+                if let Err(e) = export_todo_list_to_file(&todo_list) {
+                    eprintln!("Error exporting todo list: {}", e);
+                }
             }
         }
     }

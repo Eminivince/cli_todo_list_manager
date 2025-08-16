@@ -14,7 +14,7 @@ type Id = u32;
 
 #[derive(Debug)]
 pub struct TodoList {
-    data: Vec<(Todo, Id)>,
+    pub data: Vec<(Todo, Id)>,
 }
 
 impl TodoList {
